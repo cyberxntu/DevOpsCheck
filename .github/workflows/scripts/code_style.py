@@ -17,28 +17,49 @@ def should_ignore(filepath, ignore_list):
     return any(ignored in filepath for ignored in ignore_list)
 
 ignore_list = load_ignore_list()
+targets = sys.argv[1:] if len(sys.argv) > 1 else ["."]
 
-for root, _, files in os.walk("."):
-    for file in files:
-        if not file.endswith(".py"):
+for target in targets:
+    if os.path.isfile(target) and target.endswith(".py"):
+        if should_ignore(target, ignore_list):
             continue
-        filepath = os.path.join(root, file)
-        if should_ignore(filepath, ignore_list):
-            continue
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(target, 'r', encoding='utf-8') as f:
             for i, line in enumerate(f, 1):
                 if len(line) > 100:
                     issues.append({
-                        "file": file,
+                        "file": target,
                         "line": i,
                         "issue": "Line exceeds 100 characters"
                     })
                 if ";" in line:
                     issues.append({
-                        "file": file,
+                        "file": target,
                         "line": i,
                         "issue": "Unnecessary semicolon"
                     })
+
+    elif os.path.isdir(target):
+        for root, _, files in os.walk(target):
+            for file in files:
+                if not file.endswith(".py"):
+                    continue
+                filepath = os.path.join(root, file)
+                if should_ignore(filepath, ignore_list):
+                    continue
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    for i, line in enumerate(f, 1):
+                        if len(line) > 100:
+                            issues.append({
+                                "file": filepath,
+                                "line": i,
+                                "issue": "Line exceeds 100 characters"
+                            })
+                        if ";" in line:
+                            issues.append({
+                                "file": filepath,
+                                "line": i,
+                                "issue": "Unnecessary semicolon"
+                            })
 
 if issues:
     with open("style_results.json", "w") as out:
