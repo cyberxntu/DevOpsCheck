@@ -29,9 +29,9 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      # Run SAST
+      # Run SAST (app.py + templates/)
       - name: Run SAST
-        run: python .github/workflows/scripts/sast.py app.py
+        run: python .github/workflows/scripts/sast.py app.py templates/
         continue-on-error: true
 
       - name: Show SAST results
@@ -45,17 +45,17 @@ jobs:
       - name: Show SCA results
         run: cat sca_results.json || echo "No SCA issues"
 
-      # Run Secret Scan
+      # Run Secret Scan (app.py + templates/)
       - name: Run Secret Scan
-        run: python .github/workflows/scripts/secret_scanner.py
+        run: python .github/workflows/scripts/secret_scanner.py app.py templates/
         continue-on-error: true
 
       - name: Show Secret Scan results
         run: cat secrets_found.json || echo "No secrets found"
 
-      # Run Code Style Check
+      # Run Code Style Check (app.py + templates/)
       - name: Run Code Style
-        run: python .github/workflows/scripts/code_style.py
+        run: python .github/workflows/scripts/code_style.py app.py templates/
         continue-on-error: true
 
       - name: Show Code Style results
@@ -83,7 +83,6 @@ jobs:
           (grep -q '"pattern":' secrets_found.json && echo "❌ Secrets found" && exit 1) || echo "✅ No secrets"
           (grep -q '"issue":' style_results.json && echo "❌ Code style issues found" && exit 1) || echo "✅ Code style clean"
 
-      # Upload artifacts
       - name: Upload Results
         uses: actions/upload-artifact@v4
         with:
