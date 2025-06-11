@@ -1,4 +1,7 @@
+import sys
+import os
 import re
+import json
 import subprocess
 
 secret_patterns = [
@@ -51,18 +54,31 @@ def scan_git_diff():
 
 if __name__ == '__main__':
     ignore_list = load_ignore_list()
-    for root, _, files in os.walk("."):
-        for file in files:
-            if file.endswith(file_extensions):
-                filepath = os.path.join(root, file)
-                if should_ignore(filepath, ignore_list):
-                    continue
-                try:
-                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                        for i, line in enumerate(f, 1):
-                            scan_line(file, line, i)
-                except Exception as e:
-                    print(f"[!] Could not read file: {filepath} ({e})")
+    targets = sys.argv[1:] if len(sys.argv) > 1 else ["."]
+    for target in targets:
+        if os.path.isfile(target):
+            if should_ignore(target, ignore_list):
+                continue
+            try:
+                with open(target, 'r', encoding='utf-8', errors='ignore') as f:
+                    for i, line in enumerate(f, 1):
+                        scan_line(target, line, i)
+            except Exception as e:
+                print(f"[!] Could not read file: {target} ({e})")
+        elif os.path.isdir(target):
+            for root, _, files in os.walk(target):
+                for file in files:
+                    if not file.endswith(file_extensions):
+                        continue
+                    filepath = os.path.join(root, file)
+                    if should_ignore(filepath, ignore_list):
+                        continue
+                    try:
+                        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                            for i, line in enumerate(f, 1):
+                                scan_line(filepath, line, i)
+                    except Exception as e:
+                        print(f"[!] Could not read file: {filepath} ({e})")
 
     scan_git_diff()
 
